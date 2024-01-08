@@ -1,7 +1,3 @@
-langchain
 streamlit
-pandas
-openai
-xlrd
-openpyxl
-pandas-ai
+google-generativeai
+python-dotenv
