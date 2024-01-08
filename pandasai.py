@@ -1,31 +1,42 @@
-import streamlit as st
-from pandas_ai import AI
-import pandas as pd
+from dotenv import load_dotenv
+load_dotenv() ## loading all the environment variables
 
-# Function to create a chatbot and get response
-def get_chatbot_response(chatbot, message):
-    response = chatbot.ask(message)
+import streamlit as st
+import os
+import google.generativeai as genai
+
+genai.configure(api_key=os.getenv("GOOGLE_API_KEY"))
+
+## function to load Gemini Pro model and get repsonses
+model=genai.GenerativeModel("gemini-pro") 
+chat = model.start_chat(history=[])
+def get_gemini_response(question):
+    
+    response=chat.send_message(question,stream=True)
     return response
 
-def main():
-    st.title("CSV Chatbot with PandasAI")
+##initialize our streamlit app
 
-    # Upload CSV file
-    uploaded_file = st.file_uploader("Upload a CSV file", type="csv")
-    if uploaded_file is not None:
-        # Read the CSV file
-        data = pd.read_csv(uploaded_file)
+st.set_page_config(page_title="Q&A Demo")
 
-        # Create a chatbot
-        chatbot = AI(data)
+st.header("Gemini LLM Application")
 
-        # Chat interface
-        user_input = st.text_input("Ask a question about the data:")
+# Initialize session state for chat history if it doesn't exist
+if 'chat_history' not in st.session_state:
+    st.session_state['chat_history'] = []
 
-        if user_input:
-            # Get the response from the chatbot
-            response = get_chatbot_response(chatbot, user_input)
-            st.text(f"Response: {response}")
+input=st.text_input("Input: ",key="input")
+submit=st.button("Ask the question")
 
-if __name__ == "__main__":
-    main()
+if submit and input:
+    response=get_gemini_response(input)
+    # Add user query and response to session state chat history
+    st.session_state['chat_history'].append(("You", input))
+    st.subheader("The Response is")
+    for chunk in response:
+        st.write(chunk.text)
+        st.session_state['chat_history'].append(("Bot", chunk.text))
+st.subheader("The Chat History is")
+    
+for role, text in st.session_state['chat_history']:
+    st.write(f"{role}: {text}")
